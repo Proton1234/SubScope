@@ -53,6 +53,11 @@ a {
   font-weight: 700;
 }
 
+ul {
+  margin: 0.65rem 0 0;
+  padding-left: 1.3rem;
+}
+
 .app-shell {
   margin: 0 auto;
   max-width: 1580px;
@@ -444,6 +449,61 @@ h3 {
   width: 100%;
 }
 
+.site-footer {
+  align-items: center;
+  color: #667085;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  gap: 0.8rem;
+  justify-content: center;
+  margin-top: 1.75rem;
+}
+
+.site-footer a,
+.back-link {
+  color: #253042;
+}
+
+.privacy-shell {
+  max-width: 980px;
+}
+
+.privacy-panel {
+  box-shadow: 0 24px 60px rgba(23, 32, 42, 0.08);
+  margin-top: 1.25rem;
+  padding: 2rem;
+}
+
+.privacy-panel h1 {
+  font-size: 2.75rem;
+}
+
+.privacy-content {
+  display: grid;
+  gap: 1.35rem;
+  margin-top: 1.75rem;
+}
+
+.privacy-content h2 {
+  font-size: 1.15rem;
+}
+
+.privacy-content p,
+.privacy-content li {
+  color: #4b5563;
+}
+
+.back-link {
+  display: inline-flex;
+  margin-bottom: 1.25rem;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
 .recharts-tooltip-wrapper {
   outline: none;
 }
@@ -472,6 +532,10 @@ h3 {
   .search-panel,
   .panel {
     padding: 1rem;
+  }
+
+  .privacy-panel h1 {
+    font-size: 2.2rem;
   }
 
   .metric-grid,

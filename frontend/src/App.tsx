@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react';
 import { AnalyticsPanel } from './components/AnalyticsPanel';
 import { HistoryPanel } from './components/HistoryPanel';
+import { PrivacyPage } from './components/PrivacyPage';
 import { SavedSubredditList } from './components/SavedSubredditList';
 import { SearchPanel } from './components/SearchPanel';
 import { SubredditDetails } from './components/SubredditDetails';
@@ -23,6 +24,10 @@ function getErrorMessage(error: unknown, fallback: string): string {
 }
 
 function App() {
+  if (window.location.pathname === '/privacy') {
+    return <PrivacyPage />;
+  }
+
   // Profile, saved-list, and analytics requests report independently so one failure does not hide the rest.
   const [subredditName, setSubredditName] = useState('programming');
   const [subreddit, setSubreddit] = useState<SubredditResponse | null>(null);
@@ -132,6 +137,11 @@ function App() {
           {subreddit && <HistoryPanel history={history} loading={historyLoading} error={historyError} />}
         </div>
       </div>
+
+      <footer className="site-footer">
+        <span>SubScope is an independent portfolio project.</span>
+        <a href="/privacy">Privacy</a>
+      </footer>
     </main>
   );
 }
