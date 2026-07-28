@@ -1,7 +1,14 @@
+/*
+ * RedditAboutResponse.cs
+ *
+ * Maps the profile JSON returned by Reddit's subreddit about endpoint.
+ * RedditService converts this external shape into SubredditInfo before returning it.
+ */
 using System.Text.Json.Serialization;
 
 namespace RedditAnalytics.Api.Models;
 
+// These classes mirror Reddit's nested JSON shape and stay separate from our API models.
 public class RedditAboutResponse
 {
     [JsonPropertyName("data")]

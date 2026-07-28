@@ -68,6 +68,22 @@ Example:
 GET /api/subreddit/dotnet
 ```
 
+### `GET /api/subreddit/{name}/history`
+
+Returns historical snapshots for a saved subreddit, ordered oldest to newest. This endpoint reads PostgreSQL and does not contact Reddit.
+
+Example response:
+
+```json
+[
+  {
+    "subscriberCount": 240233,
+    "activeAccountCount": null,
+    "capturedAtUtc": "2026-07-28T18:33:11.4384521Z"
+  }
+]
+```
+
 ### `GET /api/subreddit/{name}/analytics`
 
 Fetches recent hot posts from Reddit and computes live engagement analytics. Posts are not persisted.

@@ -1,3 +1,9 @@
+/*
+ * Program.cs
+ *
+ * Configures the API's services, database, Reddit client, CORS policy, and routes.
+ * It also prepares the database at startup and exposes the container health endpoint.
+ */
 using System.Net.Http.Headers;
 using Microsoft.EntityFrameworkCore;
 using RedditAnalytics.Api.Data;
@@ -7,6 +13,17 @@ using RedditAnalytics.Api.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<RedditSettings>(builder.Configuration.GetSection("RedditSettings"));
+builder.Services.Configure<SnapshotRefreshSettings>(builder.Configuration.GetSection("SnapshotRefresh"));
+
+builder.Services.AddHttpClient("RedditOAuth", client =>
+{
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("SubScope/1.0");
+    client.DefaultRequestHeaders.Accept.Clear();
+    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+});
+
+builder.Services.AddSingleton<IRedditTokenProvider, RedditTokenProvider>();
+builder.Services.AddHostedService<SubredditSnapshotRefreshService>();
 
 builder.Services.AddHttpClient<IRedditService, RedditService>(client =>
 {
@@ -21,7 +38,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-// Allow frontend (Vite/nginx) to call the API during local development
+// The production frontend shares the API origin through nginx; only local Vite needs CORS.
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowLocal",
@@ -30,22 +47,27 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
+if (!app.Environment.IsProduction())
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var retries = 10;
-    var delay = TimeSpan.FromSeconds(3);
-    for (var attempt = 1; attempt <= retries; attempt++)
+    using (var scope = app.Services.CreateScope())
     {
-        try
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var retries = 10;
+        var delay = TimeSpan.FromSeconds(3);
+
+        // Docker may start the API before PostgreSQL is ready to accept connections.
+        for (var attempt = 1; attempt <= retries; attempt++)
         {
-            db.Database.EnsureCreated();
-            break;
-        }
-        catch (Exception ex) when (attempt < retries)
-        {
-            Console.WriteLine($"Attempt {attempt} failed to connect to database: {ex.Message}");
-            await Task.Delay(delay);
+            try
+            {
+                db.Database.EnsureCreated();
+                break;
+            }
+            catch (Exception ex) when (attempt < retries)
+            {
+                Console.WriteLine($"Attempt {attempt} failed to connect to database: {ex.Message}");
+                await Task.Delay(delay);
+            }
         }
     }
 }
@@ -54,6 +76,7 @@ app.UseCors("AllowLocal");
 
 app.MapControllers();
 
+// Include database connectivity so container health checks catch more than a running process.
 app.MapGet("/api/health", async (AppDbContext db) =>
 {
     var databaseConnected = await db.Database.CanConnectAsync();

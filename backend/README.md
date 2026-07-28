@@ -13,5 +13,6 @@ ASP.NET Core Web API backend for SubScope.
 
 - Fetch subreddit metadata from Reddit.
 - Persist saved subreddit records in PostgreSQL.
+- Periodically refresh saved subreddit records and store historical snapshots.
 - Fetch live `/hot` posts and compute analytics.
 - Expose API/database health through `/api/health`.

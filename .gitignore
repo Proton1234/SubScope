@@ -17,6 +17,7 @@ frontend/node_modules/
 # Local environment and overrides
 .env
 .env.local
+.azure-deployment-secrets.ps1
 docker/.env
 docker-compose.override.yml
 

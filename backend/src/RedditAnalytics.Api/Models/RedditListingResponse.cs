@@ -1,7 +1,14 @@
+/*
+ * RedditListingResponse.cs
+ *
+ * Maps Reddit's nested hot-post listing response.
+ * RedditService filters and converts these records into public post summaries.
+ */
 using System.Text.Json.Serialization;
 
 namespace RedditAnalytics.Api.Models;
 
+// Reddit listings wrap each post in a child object under data.children.
 public class RedditListingResponse
 {
     [JsonPropertyName("data")]

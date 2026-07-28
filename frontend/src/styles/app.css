@@ -1,3 +1,9 @@
+/*
+ * app.css
+ *
+ * Defines the shared visual system and responsive dashboard layout.
+ * main.tsx loads these styles for every frontend component.
+ */
 :root {
   color: #17202a;
   background: #f5f7fb;
@@ -232,6 +238,10 @@ h3 {
   box-shadow: 0 20px 50px rgba(255, 69, 0, 0.1);
 }
 
+.history-panel {
+  background: linear-gradient(135deg, #ffffff, #fffaf7);
+}
+
 .detail-panel {
   background: linear-gradient(135deg, #ffffff, #fbfcff);
 }
@@ -422,6 +432,20 @@ h3 {
   color: #667085;
   margin: 0 auto;
   max-width: 440px;
+}
+
+.compact-empty {
+  min-height: 150px;
+}
+
+.history-chart {
+  height: 280px;
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.recharts-tooltip-wrapper {
+  outline: none;
 }
 
 @media (max-width: 900px) {

@@ -1,3 +1,9 @@
+/*
+ * RedditTokenResponse.cs
+ *
+ * Maps the OAuth token response returned by Reddit.
+ * RedditService caches the access token and uses its lifetime to decide when to refresh it.
+ */
 using System.Text.Json.Serialization;
 
 namespace RedditAnalytics.Api.Models;

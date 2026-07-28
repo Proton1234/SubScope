@@ -1,3 +1,9 @@
+/*
+ * SubredditAnalytics.cs
+ *
+ * Defines the calculated engagement data returned by the analytics endpoint.
+ * SubredditController builds it from the hot-post summaries supplied by RedditService.
+ */
 namespace RedditAnalytics.Api.Models;
 
 public class SubredditAnalytics

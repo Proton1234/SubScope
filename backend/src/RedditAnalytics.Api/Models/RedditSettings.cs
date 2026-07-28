@@ -1,3 +1,9 @@
+/*
+ * RedditSettings.cs
+ *
+ * Holds Reddit OAuth credentials and endpoint settings loaded from application configuration.
+ * RedditService receives these values through the options system.
+ */
 namespace RedditAnalytics.Api.Models;
 
 public sealed class RedditSettings

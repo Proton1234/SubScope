@@ -1,3 +1,9 @@
+/*
+ * SearchPanel.tsx
+ *
+ * Presents the subreddit search form and reports user input back to App.
+ * App owns the search state and performs the request.
+ */
 interface SearchPanelProps {
   subredditName: string;
   loading: boolean;
