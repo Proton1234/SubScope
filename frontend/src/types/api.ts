@@ -1,3 +1,9 @@
+/*
+ * api.ts
+ *
+ * Describes the JSON contracts shared by the frontend API client and UI components.
+ * These shapes mirror responses returned by the ASP.NET API.
+ */
 export interface ApiErrorResponse {
   error?: string;
 }
@@ -14,6 +20,12 @@ export interface SubredditResponse {
   subscriberCount: number;
   activeAccountCount: number | null;
   createdUtc: string;
+}
+
+export interface SubredditHistorySnapshot {
+  subscriberCount: number;
+  activeAccountCount: number | null;
+  capturedAtUtc: string;
 }
 
 export interface RedditPostSummary {

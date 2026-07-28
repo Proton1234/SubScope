@@ -1,3 +1,9 @@
+/*
+ * SubredditController.cs
+ *
+ * Handles profile and analytics requests from the React frontend.
+ * It validates names, coordinates RedditService and AppDbContext, and returns API response models.
+ */
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RedditAnalytics.Api.Data;
@@ -8,6 +14,7 @@ namespace RedditAnalytics.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+// Subreddit profiles are persisted, while post analytics are calculated from live Reddit data.
 public class SubredditController : ControllerBase
 {
     private readonly IRedditService _redditService;
@@ -34,6 +41,7 @@ public class SubredditController : ControllerBase
             return NotFound(new { error = "Subreddit not found or Reddit API unavailable." });
         }
 
+        // Searching doubles as an upsert so saved profile counts stay reasonably current.
         var entity = await _db.Subreddits.SingleOrDefaultAsync(x => x.Name == subredditData.Name);
         if (entity is null)
         {
@@ -60,12 +68,24 @@ public class SubredditController : ControllerBase
 
         await _db.SaveChangesAsync();
 
+        var snapshot = new SubredditSnapshotEntity
+        {
+            SubredditId = entity.Id,
+            SubscriberCount = entity.SubscriberCount,
+            ActiveAccountCount = entity.ActiveAccountCount,
+            CapturedAtUtc = DateTime.UtcNow
+        };
+
+        _db.SubredditSnapshots.Add(snapshot);
+        await _db.SaveChangesAsync();
+
         return Ok(ToResponse(entity));
     }
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
+        // Put the largest saved communities first for a more useful default dashboard.
         var subreddits = await _db.Subreddits
             .OrderByDescending(x => x.SubscriberCount)
             .ToListAsync();
@@ -86,6 +106,33 @@ public class SubredditController : ControllerBase
         return entity is null ? NotFound(new { error = "Subreddit not found in database." }) : Ok(ToResponse(entity));
     }
 
+    [HttpGet("{name}/history")]
+    public async Task<IActionResult> GetHistory(string name)
+    {
+        var normalizedName = NormalizeSubredditName(name);
+        if (!IsValidSubredditName(normalizedName))
+        {
+            return BadRequest(new { error = "Enter a valid subreddit name using 2-21 letters, numbers, or underscores." });
+        }
+
+        var entity = await _db.Subreddits.SingleOrDefaultAsync(x => x.Name == normalizedName);
+        if (entity is null)
+        {
+            return NotFound(new { error = "Subreddit not found in database. Search Reddit first to persist it." });
+        }
+
+        var snapshots = await _db.SubredditSnapshots
+            .Where(snapshot => snapshot.SubredditId == entity.Id)
+            .OrderBy(snapshot => snapshot.CapturedAtUtc)
+            .Select(snapshot => new SubredditSnapshotResponse(
+                snapshot.SubscriberCount,
+                snapshot.ActiveAccountCount,
+                snapshot.CapturedAtUtc))
+            .ToListAsync();
+
+        return Ok(snapshots);
+    }
+
     [HttpGet("{name}/analytics")]
     public async Task<IActionResult> GetAnalytics(string name)
     {
@@ -101,6 +148,7 @@ public class SubredditController : ControllerBase
             return NotFound(new { error = "Subreddit not found in database. Search Reddit first to persist it." });
         }
 
+        // A small hot-post sample keeps the dashboard responsive and avoids extra Reddit calls.
         const int postLimit = 25;
         var posts = await _redditService.GetHotPostsAsync(normalizedName, postLimit);
         if (posts is null)
@@ -111,6 +159,7 @@ public class SubredditController : ControllerBase
         var postsAnalyzed = posts.Count;
         var averageScore = postsAnalyzed == 0 ? 0 : posts.Average(post => post.Score);
         var averageComments = postsAnalyzed == 0 ? 0 : posts.Average(post => post.CommentCount);
+        // This is a lightweight comparison metric, not Reddit's internal engagement formula.
         var totalEngagement = posts.Sum(post => post.Score + post.CommentCount);
         var engagementPerSubscriber = entity.SubscriberCount == 0 ? 0 : (double)totalEngagement / entity.SubscriberCount;
 
@@ -140,6 +189,11 @@ public class SubredditController : ControllerBase
         int? ActiveAccountCount,
         DateTime CreatedUtc);
 
+    public record SubredditSnapshotResponse(
+        int SubscriberCount,
+        int? ActiveAccountCount,
+        DateTime CapturedAtUtc);
+
     private static SubredditResponse ToResponse(SubredditEntity entity)
     {
         return new SubredditResponse(
@@ -148,12 +202,13 @@ public class SubredditController : ControllerBase
             entity.Title,
             entity.Description,
             entity.SubscriberCount,
-            entity.ActiveAccountCount > 0 ? entity.ActiveAccountCount : null,
+            entity.ActiveAccountCount,
             entity.CreatedUtc);
     }
 
     private static string NormalizeSubredditName(string? name)
     {
+        // Accept the common "r/name" and "/r/name" forms used in copied Reddit links.
         var normalizedName = (name ?? string.Empty).Trim();
         if (normalizedName.StartsWith("/r/", StringComparison.OrdinalIgnoreCase))
         {

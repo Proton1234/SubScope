@@ -1,3 +1,9 @@
+/*
+ * SavedSubredditList.tsx
+ *
+ * Displays subreddit profiles already stored by the backend.
+ * It lets App know when a user wants fresh analytics for a saved community.
+ */
 import { SubredditResponse } from '../types/api';
 
 interface SavedSubredditListProps {

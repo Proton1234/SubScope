@@ -1,3 +1,9 @@
+/*
+ * SubredditDetails.tsx
+ *
+ * Renders the profile returned after a successful subreddit search.
+ * App supplies the selected profile and controls when this panel appears.
+ */
 import { SubredditResponse } from '../types/api';
 
 interface SubredditDetailsProps {

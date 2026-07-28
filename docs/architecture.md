@@ -36,6 +36,7 @@ sequenceDiagram
 ## Current Capabilities
 
 - Search and persist subreddit metadata.
+- Periodically refresh saved subreddit metadata and store historical snapshots.
 - Reload saved subreddit records from PostgreSQL.
 - Compute live recent-post analytics from Reddit `/hot` data.
 - Report API/database health through `/api/health`.
@@ -43,6 +44,6 @@ sequenceDiagram
 
 ## Persistence
 
-The current persisted table is `Subreddits`. Recent Reddit posts are fetched live for analytics and are not persisted yet.
+The current persisted tables are `Subreddits` and `SubredditSnapshots`. Recent Reddit posts are fetched live for analytics and are not persisted yet.
 
-Historical snapshots, post storage, pagination, authentication, and deeper analytics are intentionally out of scope for the current polish milestone.
+Post storage, pagination, authentication, and deeper analytics are intentionally out of scope for the current polish milestone.

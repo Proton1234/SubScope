@@ -1,3 +1,8 @@
+/*
+ * main.tsx
+ *
+ * Browser entry point that mounts the root App component and loads global styles.
+ */
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';

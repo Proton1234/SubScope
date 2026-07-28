@@ -8,6 +8,7 @@ SubScope is an independent project using Reddit's public API. It is not affiliat
 
 - Search a Reddit community and fetch live metadata.
 - Persist community profile data in PostgreSQL.
+- Capture historical subscriber snapshots for tracked communities.
 - Reload and display saved communities after refresh.
 - Compute recent post analytics from Reddit's `/hot` listing.
 - Display posts analyzed, average score, average comments, engagement per subscriber, and top posts.
@@ -73,6 +74,7 @@ The backend uses Reddit OAuth credentials to call `https://oauth.reddit.com`.
 
    - `REDDIT_CLIENT_ID`
    - `REDDIT_CLIENT_SECRET`
+   - `SNAPSHOT_REFRESH_INTERVAL_MINUTES` (optional, defaults to `15`)
 
 4. Docker Compose reads the root `.env` file and passes the values to the backend container.
 
@@ -111,9 +113,19 @@ Invoke-RestMethod -Uri 'http://localhost:3000/api/subreddit' -Method Post -Conte
 Invoke-RestMethod -Uri 'http://localhost:3000/api/subreddit/dotnet/analytics'
 ```
 
+Smoke test snapshot history after saving a subreddit:
+
+```powershell
+Invoke-RestMethod -Uri 'http://localhost:3000/api/subreddit/dotnet/history'
+```
+
 ## API Documentation
 
 See [docs/api.md](docs/api.md) for endpoint contracts, example payloads, and error response shape.
+
+## Manual Azure Deployment
+
+See [docs/azure-deployment.md](docs/azure-deployment.md) for the proposed Azure Container Apps deployment architecture, required resources, secrets, schema migration approach, estimated cost, and initial Azure CLI commands.
 
 ## What This Demonstrates
 

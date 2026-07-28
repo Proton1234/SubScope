@@ -1,3 +1,9 @@
+/*
+ * AnalyticsPanel.tsx
+ *
+ * Presents engagement metrics calculated by the backend from live Reddit posts.
+ * App supplies the analytics data and its loading or error state.
+ */
 import { RedditPostSummary, SubredditAnalyticsResponse } from '../types/api';
 
 interface AnalyticsPanelProps {
