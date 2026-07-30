@@ -4,8 +4,6 @@ SubScope is a full-stack portfolio dashboard for exploring Reddit community heal
 
 SubScope is an independent project using Reddit's public API. It is not affiliated with, endorsed by, or sponsored by Reddit.
 
-Privacy policy: https://subscope-frontend.blackhill-82c3e15a.northcentralus.azurecontainerapps.io/privacy. The policy explains what public Reddit data SubScope accesses, what it stores, and how to request deletion.
-
 ## Features
 
 - Search a Reddit community and fetch live metadata.
