@@ -4,10 +4,9 @@
  * Root component that owns shared dashboard state and coordinates data loading.
  * It connects the API client to the search, saved-community, detail, and analytics panels.
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnalyticsPanel } from './components/AnalyticsPanel';
 import { HistoryPanel } from './components/HistoryPanel';
-import { PrivacyPage } from './components/PrivacyPage';
 import { SavedSubredditList } from './components/SavedSubredditList';
 import { SearchPanel } from './components/SearchPanel';
 import { SubredditDetails } from './components/SubredditDetails';
@@ -24,12 +23,8 @@ function getErrorMessage(error: unknown, fallback: string): string {
 }
 
 function App() {
-  if (window.location.pathname === '/privacy') {
-    return <PrivacyPage />;
-  }
-
   // Profile, saved-list, and analytics requests report independently so one failure does not hide the rest.
-  const [subredditName, setSubredditName] = useState('programming');
+  const [subredditName, setSubredditName] = useState('');
   const [subreddit, setSubreddit] = useState<SubredditResponse | null>(null);
   const [savedSubreddits, setSavedSubreddits] = useState<SubredditResponse[]>([]);
   const [analytics, setAnalytics] = useState<SubredditAnalyticsResponse | null>(null);
@@ -42,6 +37,8 @@ function App() {
   const [savedLoading, setSavedLoading] = useState(false);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [hasSelectedCommunity, setHasSelectedCommunity] = useState(false);
+  const latestSelectionId = useRef(0);
 
   const loadSavedSubreddits = async () => {
     setSavedLoading(true);
@@ -57,59 +54,105 @@ function App() {
     }
   };
 
-  const loadAnalytics = async (name: string) => {
+  const loadAnalytics = useCallback(async (name: string, selectionId: number) => {
     setAnalyticsLoading(true);
     setAnalyticsError(null);
 
     try {
       const data = await fetchSubredditAnalytics(name);
-      setAnalytics(data);
+      if (latestSelectionId.current === selectionId) {
+        setAnalytics(data);
+      }
     } catch (err) {
-      setAnalyticsError(getErrorMessage(err, 'Failed to load recent post analytics.'));
+      if (latestSelectionId.current === selectionId) {
+        setAnalyticsError(getErrorMessage(err, 'Failed to load recent post analytics.'));
+      }
     } finally {
-      setAnalyticsLoading(false);
+      if (latestSelectionId.current === selectionId) {
+        setAnalyticsLoading(false);
+      }
     }
-  };
+  }, []);
 
-  const loadHistory = async (name: string) => {
+  const loadHistory = useCallback(async (name: string, selectionId: number) => {
     setHistoryLoading(true);
     setHistoryError(null);
 
     try {
       const data = await fetchSubredditHistory(name);
-      setHistory(data);
+      if (latestSelectionId.current === selectionId) {
+        setHistory(data);
+      }
     } catch (err) {
-      setHistoryError(getErrorMessage(err, 'Failed to load subscriber history.'));
+      if (latestSelectionId.current === selectionId) {
+        setHistoryError(getErrorMessage(err, 'Failed to load subscriber history.'));
+      }
     } finally {
-      setHistoryLoading(false);
+      if (latestSelectionId.current === selectionId) {
+        setHistoryLoading(false);
+      }
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadSavedSubreddits();
   }, []);
 
   const handleSearch = async () => {
+    const selectionId = latestSelectionId.current + 1;
+    latestSelectionId.current = selectionId;
     setLoading(true);
     setError(null);
     setSubreddit(null);
     setAnalytics(null);
     setHistory([]);
+    setHasSelectedCommunity(true);
 
     try {
       const data = await fetchSubreddit(subredditName);
+      if (latestSelectionId.current !== selectionId) {
+        return;
+      }
+
       setSubreddit(data);
 
       // A successful search updates the database, so refresh saved data before loading live analytics.
       await loadSavedSubreddits();
-      await loadHistory(data.name);
-      await loadAnalytics(data.name);
+      await loadHistory(data.name, selectionId);
+      await loadAnalytics(data.name, selectionId);
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to fetch subreddit. Make sure the name is valid.'));
+      if (latestSelectionId.current === selectionId) {
+        setError(getErrorMessage(err, 'Failed to fetch subreddit. Make sure the name is valid.'));
+      }
     } finally {
-      setLoading(false);
+      if (latestSelectionId.current === selectionId) {
+        setLoading(false);
+      }
     }
   };
+
+  const handleInspectSavedSubreddit = useCallback(async (saved: SubredditResponse, updateSearchInput = true) => {
+    const selectionId = latestSelectionId.current + 1;
+    latestSelectionId.current = selectionId;
+    setLoading(false);
+    setError(null);
+    setSubreddit(saved);
+    if (updateSearchInput) {
+      setSubredditName(saved.name);
+    }
+    setAnalytics(null);
+    setHistory([]);
+    setHasSelectedCommunity(true);
+
+    await loadHistory(saved.name, selectionId);
+    await loadAnalytics(saved.name, selectionId);
+  }, [loadAnalytics, loadHistory]);
+
+  useEffect(() => {
+    if (!hasSelectedCommunity && !subreddit && savedSubreddits.length > 0) {
+      void handleInspectSavedSubreddit(savedSubreddits[0], false);
+    }
+  }, [handleInspectSavedSubreddit, hasSelectedCommunity, savedSubreddits, subreddit]);
 
   return (
     <main className="app-shell">
@@ -128,7 +171,8 @@ function App() {
           loading={savedLoading}
           error={savedError}
           analyticsLoading={analyticsLoading}
-          onViewAnalytics={loadAnalytics}
+          selectedSubredditName={subreddit?.name ?? null}
+          onViewAnalytics={handleInspectSavedSubreddit}
         />
 
         <div className="insights-stack">
@@ -137,11 +181,6 @@ function App() {
           {subreddit && <HistoryPanel history={history} loading={historyLoading} error={historyError} />}
         </div>
       </div>
-
-      <footer className="site-footer">
-        <span>SubScope is an independent portfolio project.</span>
-        <a href="/privacy">Privacy</a>
-      </footer>
     </main>
   );
 }
