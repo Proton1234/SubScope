@@ -11,7 +11,8 @@ interface SavedSubredditListProps {
   loading: boolean;
   error: string | null;
   analyticsLoading: boolean;
-  onViewAnalytics: (name: string) => void;
+  selectedSubredditName: string | null;
+  onViewAnalytics: (subreddit: SubredditResponse) => void;
 }
 
 export function SavedSubredditList({
@@ -19,6 +20,7 @@ export function SavedSubredditList({
   loading,
   error,
   analyticsLoading,
+  selectedSubredditName,
   onViewAnalytics
 }: SavedSubredditListProps) {
   return (
@@ -38,27 +40,31 @@ export function SavedSubredditList({
       )}
       {!loading && !error && subreddits.length > 0 && (
         <div className="saved-grid">
-          {subreddits.map((saved) => (
-            <article key={saved.id} className="subreddit-card">
-              <div className="card-header">
-                <div>
-                  <h3>{saved.title}</h3>
-                  <p>r/{saved.name}</p>
+          {subreddits.map((saved) => {
+            const isSelected = saved.name === selectedSubredditName;
+
+            return (
+              <article key={saved.id} className={`subreddit-card ${isSelected ? 'selected-subreddit-card' : ''}`}>
+                <div className="card-header">
+                  <div>
+                    <h3>{saved.title}</h3>
+                    <p>r/{saved.name}</p>
+                  </div>
+                  <span>{new Date(saved.createdUtc).toLocaleDateString()}</span>
                 </div>
-                <span>{new Date(saved.createdUtc).toLocaleDateString()}</span>
-              </div>
-              <p className="description compact-description">{saved.description || 'No description available.'}</p>
-              <div className="mini-metrics single-metric">
-                <div>
-                  <strong>{saved.subscriberCount.toLocaleString()}</strong>
-                  <span>Subscribers</span>
+                <p className="description compact-description">{saved.description || 'No description available.'}</p>
+                <div className="mini-metrics single-metric">
+                  <div>
+                    <strong>{saved.subscriberCount.toLocaleString()}</strong>
+                    <span>Subscribers</span>
+                  </div>
                 </div>
-              </div>
-              <button className="text-button" onClick={() => onViewAnalytics(saved.name)} disabled={analyticsLoading}>
-                Inspect insights
-              </button>
-            </article>
-          ))}
+                <button className="text-button" onClick={() => onViewAnalytics(saved)} disabled={analyticsLoading}>
+                  Inspect insights
+                </button>
+              </article>
+            );
+          })}
         </div>
       )}
     </section>

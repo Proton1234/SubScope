@@ -16,7 +16,6 @@ env:
   ACR_LOGIN_SERVER: acrsubscopeprod5516.azurecr.io
   BACKEND_APP_NAME: subscope-api
   FRONTEND_APP_NAME: subscope-frontend
-  FRONTEND_URL: https://subscope-frontend.blackhill-82c3e15a.northcentralus.azurecontainerapps.io
 
 jobs:
   build:
@@ -107,8 +106,15 @@ jobs:
 
       - name: Verify deployed health endpoint
         run: |
+          frontend_fqdn="$(az containerapp show \
+            --only-show-errors \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$FRONTEND_APP_NAME" \
+            --query properties.configuration.ingress.fqdn \
+            --output tsv)"
+
           for i in {1..20}; do
-            response="$(curl --fail --silent "$FRONTEND_URL/api/health" || true)"
+            response="$(curl --fail --silent "https://$frontend_fqdn/api/health" || true)"
             echo "$response"
 
             if echo "$response" | grep -q '"status":"Healthy"' && echo "$response" | grep -q '"database":"Connected"'; then

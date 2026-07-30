@@ -53,11 +53,6 @@ a {
   font-weight: 700;
 }
 
-ul {
-  margin: 0.65rem 0 0;
-  padding-left: 1.3rem;
-}
-
 .app-shell {
   margin: 0 auto;
   max-width: 1580px;
@@ -290,6 +285,12 @@ h3 {
   padding: 0.85rem;
 }
 
+.selected-subreddit-card {
+  background: #fff7f3;
+  border-color: #ff8a5c;
+  box-shadow: inset 3px 0 0 #ff4500;
+}
+
 .card-header p,
 .card-header span,
 .metric-card span,
@@ -358,6 +359,16 @@ h3 {
 .metric-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 1rem;
+}
+
+.metric-grid.tracking-summary-grid {
+  grid-template-columns: repeat(3, 220px);
+  justify-content: center;
+  width: 100%;
+}
+
+.tracking-summary-grid .metric-card {
+  min-height: 74px;
 }
 
 .detail-panel .metric-grid {
@@ -449,61 +460,6 @@ h3 {
   width: 100%;
 }
 
-.site-footer {
-  align-items: center;
-  color: #667085;
-  display: flex;
-  flex-wrap: wrap;
-  font-size: 0.9rem;
-  gap: 0.8rem;
-  justify-content: center;
-  margin-top: 1.75rem;
-}
-
-.site-footer a,
-.back-link {
-  color: #253042;
-}
-
-.privacy-shell {
-  max-width: 980px;
-}
-
-.privacy-panel {
-  box-shadow: 0 24px 60px rgba(23, 32, 42, 0.08);
-  margin-top: 1.25rem;
-  padding: 2rem;
-}
-
-.privacy-panel h1 {
-  font-size: 2.75rem;
-}
-
-.privacy-content {
-  display: grid;
-  gap: 1.35rem;
-  margin-top: 1.75rem;
-}
-
-.privacy-content h2 {
-  font-size: 1.15rem;
-}
-
-.privacy-content p,
-.privacy-content li {
-  color: #4b5563;
-}
-
-.back-link {
-  display: inline-flex;
-  margin-bottom: 1.25rem;
-  text-decoration: none;
-}
-
-.back-link:hover {
-  text-decoration: underline;
-}
-
 .recharts-tooltip-wrapper {
   outline: none;
 }
@@ -534,14 +490,14 @@ h3 {
     padding: 1rem;
   }
 
-  .privacy-panel h1 {
-    font-size: 2.2rem;
-  }
-
   .metric-grid,
   .analytics-metrics,
   .mini-metrics,
   .top-post-grid {
     grid-template-columns: 1fr;
+  }
+
+  .metric-grid.tracking-summary-grid {
+    grid-template-columns: minmax(0, 260px);
   }
 }
