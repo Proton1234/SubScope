@@ -72,9 +72,9 @@ export async function fetchSavedSubreddits(): Promise<SubredditResponse[]> {
   return response.json();
 }
 
-export async function fetchSubredditHistory(subredditName: string): Promise<SubredditHistorySnapshot[]> {
+export async function fetchSubredditHistory(subredditName: string, limit = 300): Promise<SubredditHistorySnapshot[]> {
   const normalizedName = normalizeSubredditName(subredditName);
-  const response = await fetch(`${apiBase}/subreddit/${encodeURIComponent(normalizedName)}/history`);
+  const response = await fetch(`${apiBase}/subreddit/${encodeURIComponent(normalizedName)}/history?limit=${limit}`);
 
   if (!response.ok) {
     await throwApiError(response, 'Unable to load subreddit history.');

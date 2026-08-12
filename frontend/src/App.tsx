@@ -116,10 +116,12 @@ function App() {
 
       setSubreddit(data);
 
-      // A successful search updates the database, so refresh saved data before loading live analytics.
-      await loadSavedSubreddits();
-      await loadHistory(data.name, selectionId);
-      await loadAnalytics(data.name, selectionId);
+      // A successful search updates the database; the follow-up reads can run independently.
+      await Promise.all([
+        loadSavedSubreddits(),
+        loadHistory(data.name, selectionId),
+        loadAnalytics(data.name, selectionId)
+      ]);
     } catch (err) {
       if (latestSelectionId.current === selectionId) {
         setError(getErrorMessage(err, 'Failed to fetch subreddit. Make sure the name is valid.'));
@@ -144,8 +146,10 @@ function App() {
     setHistory([]);
     setHasSelectedCommunity(true);
 
-    await loadHistory(saved.name, selectionId);
-    await loadAnalytics(saved.name, selectionId);
+    await Promise.all([
+      loadHistory(saved.name, selectionId),
+      loadAnalytics(saved.name, selectionId)
+    ]);
   }, [loadAnalytics, loadHistory]);
 
   useEffect(() => {
@@ -177,7 +181,11 @@ function App() {
 
         <div className="insights-stack">
           {subreddit && <SubredditDetails subreddit={subreddit} heading="Current community" />}
-          <AnalyticsPanel analytics={analytics} loading={analyticsLoading} error={analyticsError} />
+          <AnalyticsPanel
+            analytics={analytics}
+            loading={analyticsLoading}
+            error={analyticsError}
+          />
           {subreddit && <HistoryPanel history={history} loading={historyLoading} error={historyError} />}
         </div>
       </div>

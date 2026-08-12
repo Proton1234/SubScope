@@ -18,11 +18,13 @@ namespace RedditAnalytics.Api.Controllers;
 public class SubredditController : ControllerBase
 {
     private readonly IRedditService _redditService;
+    private readonly ISubredditAnalyticsService _analyticsService;
     private readonly AppDbContext _db;
 
-    public SubredditController(IRedditService redditService, AppDbContext db)
+    public SubredditController(IRedditService redditService, ISubredditAnalyticsService analyticsService, AppDbContext db)
     {
         _redditService = redditService;
+        _analyticsService = analyticsService;
         _db = db;
     }
 
@@ -87,6 +89,7 @@ public class SubredditController : ControllerBase
     {
         // Put the largest saved communities first for a more useful default dashboard.
         var subreddits = await _db.Subreddits
+            .AsNoTracking()
             .OrderByDescending(x => x.SubscriberCount)
             .ToListAsync();
 
@@ -102,12 +105,14 @@ public class SubredditController : ControllerBase
             return BadRequest(new { error = "Enter a valid subreddit name using 2-21 letters, numbers, or underscores." });
         }
 
-        var entity = await _db.Subreddits.SingleOrDefaultAsync(x => x.Name == normalizedName);
+        var entity = await _db.Subreddits
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Name == normalizedName);
         return entity is null ? NotFound(new { error = "Subreddit not found in database." }) : Ok(ToResponse(entity));
     }
 
     [HttpGet("{name}/history")]
-    public async Task<IActionResult> GetHistory(string name)
+    public async Task<IActionResult> GetHistory(string name, [FromQuery] int? limit = null)
     {
         var normalizedName = NormalizeSubredditName(name);
         if (!IsValidSubredditName(normalizedName))
@@ -115,13 +120,21 @@ public class SubredditController : ControllerBase
             return BadRequest(new { error = "Enter a valid subreddit name using 2-21 letters, numbers, or underscores." });
         }
 
-        var entity = await _db.Subreddits.SingleOrDefaultAsync(x => x.Name == normalizedName);
+        if (limit is <= 1)
+        {
+            return BadRequest(new { error = "History limit must be at least 2." });
+        }
+
+        var entity = await _db.Subreddits
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Name == normalizedName);
         if (entity is null)
         {
             return NotFound(new { error = "Subreddit not found in database. Search Reddit first to persist it." });
         }
 
         var snapshots = await _db.SubredditSnapshots
+            .AsNoTracking()
             .Where(snapshot => snapshot.SubredditId == entity.Id)
             .OrderBy(snapshot => snapshot.CapturedAtUtc)
             .Select(snapshot => new SubredditSnapshotResponse(
@@ -130,7 +143,7 @@ public class SubredditController : ControllerBase
                 snapshot.CapturedAtUtc))
             .ToListAsync();
 
-        return Ok(snapshots);
+        return Ok(limit.HasValue ? DownsampleSnapshots(snapshots, limit.Value) : snapshots);
     }
 
     [HttpGet("{name}/analytics")]
@@ -142,38 +155,19 @@ public class SubredditController : ControllerBase
             return BadRequest(new { error = "Enter a valid subreddit name using 2-21 letters, numbers, or underscores." });
         }
 
-        var entity = await _db.Subreddits.SingleOrDefaultAsync(x => x.Name == normalizedName);
+        var entity = await _db.Subreddits
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Name == normalizedName);
         if (entity is null)
         {
             return NotFound(new { error = "Subreddit not found in database. Search Reddit first to persist it." });
         }
 
-        // A small hot-post sample keeps the dashboard responsive and avoids extra Reddit calls.
-        const int postLimit = 25;
-        var posts = await _redditService.GetHotPostsAsync(normalizedName, postLimit);
-        if (posts is null)
+        var analytics = await _analyticsService.GetAnalyticsAsync(entity);
+        if (analytics is null)
         {
             return NotFound(new { error = "Unable to fetch recent Reddit posts for analytics." });
         }
-
-        var postsAnalyzed = posts.Count;
-        var averageScore = postsAnalyzed == 0 ? 0 : posts.Average(post => post.Score);
-        var averageComments = postsAnalyzed == 0 ? 0 : posts.Average(post => post.CommentCount);
-        // This is a lightweight comparison metric, not Reddit's internal engagement formula.
-        var totalEngagement = posts.Sum(post => post.Score + post.CommentCount);
-        var engagementPerSubscriber = entity.SubscriberCount == 0 ? 0 : (double)totalEngagement / entity.SubscriberCount;
-
-        var analytics = new SubredditAnalytics
-        {
-            SubredditName = entity.Name,
-            PostsAnalyzed = postsAnalyzed,
-            AverageScore = Math.Round(averageScore, 2),
-            AverageComments = Math.Round(averageComments, 2),
-            EngagementPerSubscriber = Math.Round(engagementPerSubscriber, 6),
-            TopPostByScore = posts.OrderByDescending(post => post.Score).FirstOrDefault(),
-            TopPostByComments = posts.OrderByDescending(post => post.CommentCount).FirstOrDefault(),
-            FetchedUtc = DateTime.UtcNow
-        };
 
         return Ok(analytics);
     }
@@ -225,5 +219,33 @@ public class SubredditController : ControllerBase
     private static bool IsValidSubredditName(string name)
     {
         return name.Length is >= 2 and <= 21 && name.All(character => char.IsLetterOrDigit(character) || character == '_');
+    }
+
+    private static IReadOnlyList<SubredditSnapshotResponse> DownsampleSnapshots(
+        IReadOnlyList<SubredditSnapshotResponse> snapshots,
+        int limit)
+    {
+        if (snapshots.Count <= limit)
+        {
+            return snapshots;
+        }
+
+        var sampled = new List<SubredditSnapshotResponse>(capacity: limit);
+        var lastIndex = snapshots.Count - 1;
+        var previousIndex = -1;
+
+        for (var sampleIndex = 0; sampleIndex < limit; sampleIndex++)
+        {
+            var sourceIndex = (int)Math.Round((double)sampleIndex * lastIndex / (limit - 1));
+            if (sourceIndex == previousIndex)
+            {
+                continue;
+            }
+
+            sampled.Add(snapshots[sourceIndex]);
+            previousIndex = sourceIndex;
+        }
+
+        return sampled;
     }
 }
