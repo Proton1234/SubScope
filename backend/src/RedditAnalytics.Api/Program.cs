@@ -15,6 +15,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<RedditSettings>(builder.Configuration.GetSection("RedditSettings"));
 builder.Services.Configure<SnapshotRefreshSettings>(builder.Configuration.GetSection("SnapshotRefresh"));
 
+builder.Services.AddMemoryCache();
+
 builder.Services.AddHttpClient("RedditOAuth", client =>
 {
     client.DefaultRequestHeaders.UserAgent.ParseAdd("SubScope/1.0");
@@ -24,6 +26,7 @@ builder.Services.AddHttpClient("RedditOAuth", client =>
 
 builder.Services.AddSingleton<IRedditTokenProvider, RedditTokenProvider>();
 builder.Services.AddHostedService<SubredditSnapshotRefreshService>();
+builder.Services.AddScoped<ISubredditAnalyticsService, SubredditAnalyticsService>();
 
 builder.Services.AddHttpClient<IRedditService, RedditService>(client =>
 {

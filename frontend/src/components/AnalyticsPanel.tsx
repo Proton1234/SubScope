@@ -4,6 +4,7 @@
  * Presents engagement metrics calculated by the backend from live Reddit posts.
  * App supplies the analytics data and its loading or error state.
  */
+import { useState } from 'react';
 import { RedditPostSummary, SubredditAnalyticsResponse } from '../types/api';
 
 interface AnalyticsPanelProps {
@@ -38,6 +39,8 @@ function TopPost({ label, post }: { label: string; post?: RedditPostSummary }) {
 }
 
 export function AnalyticsPanel({ analytics, loading, error }: AnalyticsPanelProps) {
+  const [scoreTooltipOpen, setScoreTooltipOpen] = useState(false);
+
   return (
     <section className="panel analytics-panel">
       <div className="section-heading">
@@ -58,16 +61,29 @@ export function AnalyticsPanel({ analytics, loading, error }: AnalyticsPanelProp
       {analytics && !loading && (
         <div>
           <p className="panel-subtitle">
-            Analyzed {analytics.postsAnalyzed} hot posts from r/{analytics.subredditName} at{' '}
+            Updated from r/{analytics.subredditName} at{' '}
             {new Date(analytics.fetchedUtc).toLocaleString()}.
           </p>
           <div className="metric-grid analytics-metrics">
             <div className="metric-card">
-              <span>Posts analyzed</span>
-              <strong>{analytics.postsAnalyzed}</strong>
-            </div>
-            <div className="metric-card">
-              <span>Average score</span>
+              <span className="metric-label-with-info">
+                Average score
+                <span className="info-tooltip-wrapper">
+                  <button
+                    className="info-tooltip-trigger"
+                    type="button"
+                    aria-expanded={scoreTooltipOpen}
+                    aria-label="Average Reddit score across the analyzed posts. Reddit score is roughly upvotes minus downvotes."
+                    onBlur={() => setScoreTooltipOpen(false)}
+                    onClick={() => setScoreTooltipOpen((isOpen) => !isOpen)}
+                  >
+                    i
+                  </button>
+                  <span className={`info-tooltip-bubble ${scoreTooltipOpen ? 'is-open' : ''}`} role="tooltip">
+                    Average Reddit score across the analyzed posts. Reddit score is roughly upvotes minus downvotes.
+                  </span>
+                </span>
+              </span>
               <strong>{analytics.averageScore.toLocaleString()}</strong>
             </div>
             <div className="metric-card">
